@@ -1,3 +1,5 @@
 .vscode
 build
 yae.log
+cloned_repositories
+local-config.json
