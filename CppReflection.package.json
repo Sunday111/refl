@@ -1,3 +1,13 @@
 {
-    "modules_dir": "modules"
+    "modules_dir": "modules",
+    "dependencies": {
+        "packages": [
+            {
+                "link": "https://github.com/Sunday111/EverydayTools main",
+                "packages": [
+                    "EverydayTools"
+                ]
+            }
+        ]
+    }
 }
