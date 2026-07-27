@@ -2,7 +2,7 @@
 Header-only C++20 library that allows you to reflect C++ types and use that information at runtime (find and call a class method by name using a pointer to an object, get a class member value, and so on).
 
 Dependencies:
- - [EverydayTools](https://github.com/Sunday111/EverydayTools)
+ - [edt](https://github.com/Sunday111/edt)
  - [googletest](https://github.com/google/googletest) for tests
 
 ## Runtime identity
@@ -29,3 +29,25 @@ Format the repository and run clang-tidy against a consumer compilation database
 yae format --repository_dir /path/to/refl
 yae tidy --repository_dir /path/to/refl --build_dir /path/to/verlet/build --all
 ```
+
+## Using it (yae)
+
+refl is a [yae](https://github.com/Sunday111/yae) package. Declare it in your `*.package.json`:
+
+```json
+{ "link": "https://github.com/Sunday111/refl main", "packages": ["refl"] }
+```
+
+and depend on the `refl` module. Types live in the `refl::` namespace and are included as
+`#include "refl/..."` — e.g. `refl::GetTypeInfo<T>()`, `refl::TypeRegistry`,
+`refl::StaticClassTypeInfo<T>(...)`.
+
+## Building & testing
+
+```sh
+yae build refl_tests
+yae run refl_tests
+```
+
+The root `CMakeLists.txt` is yae-generated; CI runs on every push. The repo carries its own
+`.clang-format` / `.clang-tidy`.
