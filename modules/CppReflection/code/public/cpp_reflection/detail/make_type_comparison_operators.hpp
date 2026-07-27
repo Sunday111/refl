@@ -2,8 +2,8 @@
 
 #include <functional>
 
-#include "../TypeComparisonOperators.hpp"
-#include "HasOperator.hpp"
+#include "../type_comparison_operators.hpp"
+#include "has_operator.hpp"
 
 namespace cppreflection::detail
 {

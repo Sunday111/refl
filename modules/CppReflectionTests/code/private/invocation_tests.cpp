@@ -3,8 +3,8 @@
 #include <stdexcept>
 #include <string_view>
 
-#include "CppReflection/CallReflectedFunction.hpp"
-#include "CppReflection/GetTypeInfo.hpp"
+#include "cpp_reflection/call_reflected_function.hpp"
+#include "cpp_reflection/get_type_info.hpp"
 #include "gtest/gtest.h"
 
 namespace

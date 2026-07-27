@@ -7,7 +7,7 @@
 #include <type_traits>
 #include <utility>
 
-#include "../Function.hpp"
+#include "../function.hpp"
 #include "edt/template/signature.hpp"
 
 namespace cppreflection

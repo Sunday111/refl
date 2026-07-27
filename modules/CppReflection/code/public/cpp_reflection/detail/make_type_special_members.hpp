@@ -4,7 +4,7 @@
 #include <type_traits>
 #include <utility>
 
-#include "../TypeSpecialMembers.hpp"
+#include "../type_special_members.hpp"
 
 namespace cppreflection::detail
 {

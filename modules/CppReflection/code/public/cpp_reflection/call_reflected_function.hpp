@@ -7,7 +7,7 @@
 #include <type_traits>
 #include <utility>
 
-#include "GetTypeInfo.hpp"
+#include "get_type_info.hpp"
 
 namespace cppreflection
 {

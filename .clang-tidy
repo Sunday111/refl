@@ -31,6 +31,6 @@ modernize-*,\
 -portability-avoid-pragma-once,\
 "
 WarningsAsErrors: '*'
-HeaderFilterRegex: '.*/modules/CppReflection/code/public/CppReflection/.*'
+HeaderFilterRegex: '.*/modules/CppReflection/code/public/cpp_reflection/.*'
 # Use clang-format
 FormatStyle: file

@@ -4,9 +4,9 @@
 #include <string>
 #include <type_traits>
 
-#include "Detail/CallReflectType.hpp"
-#include "Reflector/TypeReflector.hpp"
-#include "TypeRegistry.hpp"
+#include "detail/call_reflect_type.hpp"
+#include "reflector/type_reflector.hpp"
+#include "type_registry.hpp"
 
 namespace cppreflection
 {

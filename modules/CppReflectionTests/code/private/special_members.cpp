@@ -5,8 +5,8 @@
 #include <string>
 #include <string_view>
 
-#include "CppReflection/CallReflectedFunction.hpp"
-#include "CppReflection/Reflector/TypeReflector.hpp"
+#include "cpp_reflection/call_reflected_function.hpp"
+#include "cpp_reflection/reflector/type_reflector.hpp"
 #include "gtest/gtest.h"
 
 TEST(CppReflectionTest, SpecialMembers_DefaultConstructor)

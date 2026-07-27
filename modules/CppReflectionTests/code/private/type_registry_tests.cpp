@@ -9,8 +9,8 @@
 #include <type_traits>
 #include <vector>
 
-#include "CppReflection/GetStaticTypeInfo.hpp"
-#include "CppReflection/GetTypeInfo.hpp"
+#include "cpp_reflection/get_static_type_info.hpp"
+#include "cpp_reflection/get_type_info.hpp"
 #include "edt/template/static_for.hpp"
 #include "cross_tu_identity.hpp"
 #include "gtest/gtest.h"

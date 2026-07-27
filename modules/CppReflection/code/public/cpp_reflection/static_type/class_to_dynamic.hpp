@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Type.hpp"
+#include "../type.hpp"
 #include "class.hpp"
 
 namespace cppreflection

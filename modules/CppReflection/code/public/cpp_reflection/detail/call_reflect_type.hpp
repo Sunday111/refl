@@ -2,7 +2,7 @@
 
 #include <type_traits>
 
-#include "../GetStaticTypeInfo.hpp"
+#include "../get_static_type_info.hpp"
 
 namespace cppreflection::detail
 {

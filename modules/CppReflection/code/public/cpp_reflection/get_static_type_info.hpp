@@ -1,12 +1,12 @@
 #pragma once
 
 #include "edt/template/is_specialization.hpp"
-#include "ReflectionProvider.hpp"
-#include "Reflector/TypeReflector.hpp"
-#include "StaticType/class.hpp"
-#include "StaticType/enum.hpp"
-#include "StaticType/fundamental.hpp"
-#include "TypeRegistry.hpp"
+#include "reflection_provider.hpp"
+#include "reflector/type_reflector.hpp"
+#include "static_type/class.hpp"
+#include "static_type/enum.hpp"
+#include "static_type/fundamental.hpp"
+#include "type_registry.hpp"
 
 namespace cppreflection
 {
@@ -53,7 +53,7 @@ template <typename T>
 }
 }  // namespace cppreflection
 
-#include "StaticType/class_to_dynamic.hpp"
+#include "static_type/class_to_dynamic.hpp"
 
 namespace cppreflection
 {

@@ -11,11 +11,11 @@
 #include <vector>
 
 #include "edt/guid.hpp"
-#include "Field.hpp"
-#include "Function.hpp"
-#include "TypeComparisonOperators.hpp"
-#include "TypeFlag.hpp"
-#include "TypeSpecialMembers.hpp"
+#include "field.hpp"
+#include "function.hpp"
+#include "type_comparison_operators.hpp"
+#include "type_flag.hpp"
+#include "type_special_members.hpp"
 
 namespace cppreflection
 {
@@ -119,4 +119,4 @@ private:
 };
 }  // namespace cppreflection
 
-#include "TypeRegistry.hpp"
+#include "type_registry.hpp"

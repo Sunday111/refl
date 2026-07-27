@@ -3,8 +3,8 @@
 #include <cassert>
 #include <utility>
 
-#include "../Detail/FieldTraits.hpp"
-#include "../Field.hpp"
+#include "../detail/field_traits.hpp"
+#include "../field.hpp"
 
 namespace cppreflection
 {

@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <string_view>
 
-#include "../ReflectionProvider.hpp"
+#include "../reflection_provider.hpp"
 #include "edt/guid.hpp"
 
 namespace cppreflection

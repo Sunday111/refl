@@ -6,7 +6,7 @@
 #include <string>
 #include <string_view>
 
-#include "CppReflection/GetTypeInfo.hpp"
+#include "cpp_reflection/get_type_info.hpp"
 #include "gtest/gtest.h"
 
 enum class ExampleEnum : std::uint8_t

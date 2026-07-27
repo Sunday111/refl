@@ -1,7 +1,7 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "CppReflection/GetStaticTypeInfo.hpp"
+#include "cpp_reflection/get_static_type_info.hpp"
 #include "gtest/gtest.h"
 
 namespace

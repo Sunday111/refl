@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "edt/guid.hpp"
-#include "Type.hpp"
+#include "type.hpp"
 
 namespace cppreflection
 {

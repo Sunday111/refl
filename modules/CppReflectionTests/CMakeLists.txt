@@ -1,18 +1,18 @@
 cmake_minimum_required(VERSION 3.20)
 include(set_compiler_options)
 set(module_source_files
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/ComparisonOperators.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/Fields.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/Methods.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/SpecialMembers.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/StaticMethods.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/StaticTypeInfo.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/TypeGUID.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/comparison_operators.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/cross_tu_identity.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/cross_tu_identity_a.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/cross_tu_identity_b.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/fields.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/invocation_tests.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/methods.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/special_members.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/static_methods.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/static_type_info.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/static_type_info_tests.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/type_guid.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/type_hierarchy_tests.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/type_registry_tests.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/util.cpp)
