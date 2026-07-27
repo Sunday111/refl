@@ -1,11 +1,11 @@
 {
-    "name": "CppReflection",
+    "name": "refl",
     "default_configuration": {
         "build_dir": "build",
         "build_targets": [
-            "CppReflectionTests"
+            "refl_tests"
         ],
-        "run_target": "CppReflectionTests"
+        "run_target": "refl_tests"
     },
     "cpp": {
         "standard": "20"
