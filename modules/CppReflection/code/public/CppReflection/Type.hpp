@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-#include "EverydayTools/GUID.hpp"
+#include "edt/guid.hpp"
 #include "Field.hpp"
 #include "Function.hpp"
 #include "TypeComparisonOperators.hpp"

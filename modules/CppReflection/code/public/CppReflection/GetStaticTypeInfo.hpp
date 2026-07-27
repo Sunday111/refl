@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EverydayTools/Template/IsSpecialization.hpp"
+#include "edt/template/is_specialization.hpp"
 #include "ReflectionProvider.hpp"
 #include "Reflector/TypeReflector.hpp"
 #include "StaticType/class.hpp"

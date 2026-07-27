@@ -6,7 +6,7 @@
 #include <string_view>
 
 #include "../ReflectionProvider.hpp"
-#include "EverydayTools/GUID.hpp"
+#include "edt/guid.hpp"
 
 namespace cppreflection
 {

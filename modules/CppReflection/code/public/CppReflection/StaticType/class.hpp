@@ -5,9 +5,9 @@
 #include <type_traits>
 #include <utility>
 
-#include "EverydayTools/GUID.hpp"
-#include "EverydayTools/Template/StaticFor.hpp"
-#include "EverydayTools/Template/StringLiteral.hpp"
+#include "edt/guid.hpp"
+#include "edt/template/static_for.hpp"
+#include "edt/template/string_literal.hpp"
 
 namespace cppreflection
 {

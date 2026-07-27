@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "EverydayTools/GUID.hpp"
+#include "edt/guid.hpp"
 #include "Type.hpp"
 
 namespace cppreflection

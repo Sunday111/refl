@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EverydayTools/Bitset/EnumBitset.hpp"
+#include "edt/bitset/enum_bitset.hpp"
 
 namespace cppreflection
 {

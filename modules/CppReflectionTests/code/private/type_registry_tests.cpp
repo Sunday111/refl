@@ -11,7 +11,7 @@
 
 #include "CppReflection/GetStaticTypeInfo.hpp"
 #include "CppReflection/GetTypeInfo.hpp"
-#include "EverydayTools/Template/StaticFor.hpp"
+#include "edt/template/static_for.hpp"
 #include "cross_tu_identity.hpp"
 #include "gtest/gtest.h"
 
