@@ -11,10 +11,6 @@ enum class TypeFlag
     Number = (1 << 1),
     Enumeration = (1 << 3),
     Class = (1 << 4),
-    CommonNumber = (1 << 0) | (1 << 1),
-    CommonEnumeration = (1 << 0) | (1 << 3),
-    CommonClass = (1 << 0) | (1 << 4),
-    All = (1 << 0) | (1 << 1) | (1 << 3) | (1 << 4),
 };
 }  // namespace refl
 

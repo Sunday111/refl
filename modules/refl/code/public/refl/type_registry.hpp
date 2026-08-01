@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "edt/bitset/bitset_utilities.hpp"
 #include "edt/guid.hpp"
 #include "type.hpp"
 
@@ -207,7 +208,7 @@ inline bool Type::IsA(edt::GUID type_guid) const
         return true;
     }
 
-    if (m_flags != TypeFlag::CommonClass && m_flags != TypeFlag::Class)
+    if (!edt::FlagIsSet(m_flags, TypeFlag::Class))
     {
         return false;
     }

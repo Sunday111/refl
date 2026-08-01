@@ -62,15 +62,15 @@ inline TypeReflector<T>::TypeReflector(Type& type) : m_type(&type)
     TypeFlag flags = TypeFlag::Common;
     if constexpr (std::is_arithmetic_v<Value>)
     {
-        flags = TypeFlag::CommonNumber;
+        flags |= TypeFlag::Number;
     }
     else if constexpr (std::is_enum_v<Value>)
     {
-        flags = TypeFlag::CommonEnumeration;
+        flags |= TypeFlag::Enumeration;
     }
     else if constexpr (std::is_class_v<Value> || std::is_union_v<Value>)
     {
-        flags = TypeFlag::CommonClass;
+        flags |= TypeFlag::Class;
     }
     m_type->SetFlags(flags);
 }
