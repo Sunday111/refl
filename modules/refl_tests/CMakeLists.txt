@@ -1,5 +1,6 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.29)
 include(set_compiler_options)
+include(yae_debug_info_compression)
 set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/comparison_operators.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/cross_tu_identity.hpp
@@ -22,6 +23,7 @@ target_link_libraries(refl_tests PRIVATE refl
                                          gtest_main)
 target_include_directories(refl_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/code/public)
 target_include_directories(refl_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/code/private)
+enable_debug_info_compression_for(refl_tests)
 enable_testing()
 include(GoogleTest)
 gtest_discover_tests(refl_tests)
