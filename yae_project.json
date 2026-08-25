@@ -5,7 +5,11 @@
         "build_targets": [
             "refl_tests"
         ],
-        "run_target": "refl_tests"
+        "run_target": "refl_tests",
+        "yae-toolchain": {
+            "compiler": "clang-22",
+            "linker": "ld"
+        }
     },
     "cpp": {
         "standard": "23"
