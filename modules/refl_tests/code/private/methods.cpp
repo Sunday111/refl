@@ -1,10 +1,9 @@
-#include <iostream>
 #include <string>
 #include <string_view>
 
+#include "gtest/gtest.h"
 #include "refl/call_reflected_function.hpp"
 #include "refl/reflector/type_reflector.hpp"
-#include "gtest/gtest.h"
 
 TEST(reflTest, Method_ReturnsVoidArgumentVoid)
 {
@@ -392,11 +391,7 @@ TEST(reflTest, Method_ReturnsRValueArgumentVoid)
     class ReflectedType
     {
     public:
-        ReflectedType()
-        {
-            member.value.resize(10);
-            std::cout << "ReflectedType() " << '\n';
-        }
+        ReflectedType() { member.value.resize(10); }
 
         MovableType&& f1() { return std::move(member); }
 
@@ -423,8 +418,7 @@ TEST(reflTest, Method_ReturnsRValueArgumentVoid)
     EXPECT_TRUE(functionInfo->GetArguments().size() == 0);
 
     ReflectedType object;
-    MovableType moved =
-        refl::WrapReflectedFunctionReturnType<MovableType&&>(functionInfo, &object, nullptr, 0);
+    MovableType moved = refl::WrapReflectedFunctionReturnType<MovableType&&>(functionInfo, &object, nullptr, 0);
     EXPECT_TRUE(moved.value.size() == 10);
     moved.value.clear();
 }
