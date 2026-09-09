@@ -7,6 +7,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/refl/detail/has_operator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/refl/detail/make_type_comparison_operators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/refl/detail/make_type_special_members.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/refl/detail/member_pointer_owner.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/refl/field.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/refl/function.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/refl/get_static_type_info.hpp

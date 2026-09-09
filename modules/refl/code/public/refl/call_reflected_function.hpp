@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cstddef>
 #include <memory>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 
@@ -20,6 +21,10 @@ decltype(auto) WrapReflectedFunctionReturnType(
     const ArgumentValueCategory* categories,
     size_t argsCount)
 {
+    if (fn->IsAmbiguous())
+    {
+        throw std::invalid_argument("Ambiguous reflected method");
+    }
     if constexpr (!std::is_same_v<void, ReturnType>)
     {
         assert(GetTypeInfo<ReturnType>() == fn->GetReturnType());
@@ -63,16 +68,20 @@ decltype(auto) WrapReflectedFunctionReturnType(const Function* fn, void* instanc
 template <typename ReturnType, typename Class, typename... Args>
 decltype(auto) CallMethod(const Function* fn, Class& instance, Args&&... args)
 {
+    void* object = const_cast<void*>(static_cast<const void*>(std::addressof(instance)));
+    if (fn->GetObjectType() != nullptr)
+    {
+        object = GetTypeInfo<Class>()->CastTo(fn->GetObjectType(), object);
+        if (object == nullptr)
+        {
+            throw std::invalid_argument("The instance cannot be converted to the reflected method's object type");
+        }
+    }
     constexpr size_t argsCount = sizeof...(Args);
     std::array<void*, argsCount> arguments{const_cast<void*>(static_cast<const void*>(std::addressof(args)))...};
     std::array<ArgumentValueCategory, argsCount> categories{
         (std::is_lvalue_reference_v<Args&&> ? ArgumentValueCategory::LValue : ArgumentValueCategory::RValue)...};
-    return WrapReflectedFunctionReturnType<ReturnType>(
-        fn,
-        const_cast<void*>(static_cast<const void*>(std::addressof(instance))),
-        arguments.data(),
-        categories.data(),
-        argsCount);
+    return WrapReflectedFunctionReturnType<ReturnType>(fn, object, arguments.data(), categories.data(), argsCount);
 }
 
 template <typename ReturnType, typename... Args>

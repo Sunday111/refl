@@ -34,9 +34,10 @@ private:
     template <size_t Index>
     static constexpr decltype(auto) CastArg_i(void** ArgsArray, const ArgumentValueCategory* Categories);
 
-    static void Call(void* Object, void* ReturnValue, void** ArgsArray, size_t ArgsArraySize);
+    static void Call(const Function&, void* Object, void* ReturnValue, void** ArgsArray, size_t ArgsArraySize);
 
     static void CallForwarded(
+        const Function&,
         void* Object,
         void* ReturnValue,
         void** ArgsArray,
@@ -79,8 +80,7 @@ inline FunctionReflector<pfn>::FunctionReflector()
 
     if constexpr (!Signature::Pure)
     {
-        using Class = typename Signature::Class;
-        m_function.SetObjectType(GetTypeInfo<Class>());
+        m_function.SetObjectType(GetTypeInfo<typename Signature::Class>());
     }
 
     InitializeArgs(std::make_index_sequence<Signature::GetArgsCount()>());
@@ -133,7 +133,8 @@ inline void FunctionReflector<pfn>::SetName(const std::string_view& name)
 }
 
 template <auto pfn>
-inline void FunctionReflector<pfn>::Call(void* Object, void* ReturnValue, void** ArgsArray, size_t ArgsArraySize)
+inline void
+FunctionReflector<pfn>::Call(const Function&, void* Object, void* ReturnValue, void** ArgsArray, size_t ArgsArraySize)
 {
     Call_i(
         Object,
@@ -146,6 +147,7 @@ inline void FunctionReflector<pfn>::Call(void* Object, void* ReturnValue, void**
 
 template <auto pfn>
 inline void FunctionReflector<pfn>::CallForwarded(
+    const Function&,
     void* Object,
     void* ReturnValue,
     void** ArgsArray,
@@ -212,8 +214,10 @@ inline void FunctionReflector<pfn>::Call_i(
         }
         else
         {
-            using Class = typename Signature::Class;
-            return std::invoke(pfn, CastObject<Class, Signature>(Object), CastArg_i<Index>(ArgsArray, Categories)...);
+            return std::invoke(
+                pfn,
+                CastObject<typename Signature::Class, Signature>(Object),
+                CastArg_i<Index>(ArgsArray, Categories)...);
         }
     };
 

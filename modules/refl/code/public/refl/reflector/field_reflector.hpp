@@ -29,17 +29,17 @@ public:
         if constexpr (Traits::IsStatic())
         {
             m_field.SetValueGetter(
-                []([[maybe_unused]] void* instance) -> void*
+                [](const refl::Field&, [[maybe_unused]] void* instance) -> void*
                 { return const_cast<void*>(static_cast<const void*>(pField)); });
         }
         else
         {
+            m_field.SetDeclaringType(GetTypeInfo<typename Traits::Class>());
             m_field.SetValueGetter(
-                [](void* instance) -> void*
+                [](const refl::Field&, void* instance) -> void*
                 {
                     assert(instance != nullptr);
-                    using Class = typename Traits::Class;
-                    auto casted = reinterpret_cast<Class*>(instance);
+                    auto casted = static_cast<typename Traits::Class*>(instance);
                     return &(casted->*pField);
                 });
         }

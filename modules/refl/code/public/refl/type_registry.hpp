@@ -107,6 +107,40 @@ private:
 
     void CommitReflectionTransaction()
     {
+        for (const auto& staged : m_staged_types)
+        {
+            staged.type->FinalizeInheritedMembers();
+        }
+        for (const auto& staged : m_staged_types)
+        {
+            std::vector<const Type*> pending{staged.type};
+            std::unordered_set<const Type*> visited;
+            while (!pending.empty())
+            {
+                const auto* current = pending.back();
+                pending.pop_back();
+                if (!visited.insert(current).second)
+                {
+                    continue;
+                }
+                pending.insert(pending.end(), current->m_direct_bases.begin(), current->m_direct_bases.end());
+                for (const auto& guid : current->m_base_class_guids)
+                {
+                    staged.type->m_ancestor_guids.insert(guid);
+                    const auto local = std::ranges::find_if(
+                        m_staged_types,
+                        [&](const auto& candidate) { return candidate.type->GetGuid() == guid; });
+                    if (local != m_staged_types.end())
+                    {
+                        pending.push_back(local->type);
+                    }
+                    else if (const auto registered = m_types_by_guid.find(guid); registered != m_types_by_guid.end())
+                    {
+                        pending.push_back(registered->second);
+                    }
+                }
+            }
+        }
         const edt::GUID zero_guid{};
         for (size_t index = 0; index < m_staged_types.size(); ++index)
         {
@@ -213,15 +247,6 @@ inline bool Type::IsA(edt::GUID type_guid) const
         return false;
     }
 
-    std::optional<edt::GUID> parent = m_base_class_guid;
-    while (parent.has_value())
-    {
-        if (*parent == type_guid)
-        {
-            return true;
-        }
-        parent = GetTypeRegistry()->GetType(*parent)->GetBaseClass();
-    }
-    return false;
+    return m_ancestor_guids.contains(type_guid);
 }
 }  // namespace refl

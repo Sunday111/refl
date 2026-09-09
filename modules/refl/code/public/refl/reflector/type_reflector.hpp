@@ -2,12 +2,17 @@
 
 #include "../detail/make_type_comparison_operators.hpp"
 #include "../detail/make_type_special_members.hpp"
+#include "../detail/member_pointer_owner.hpp"
+#include "../reflection_provider.hpp"
 #include "../type.hpp"
 #include "field_reflector.hpp"
 #include "function_reflector.hpp"
 
 namespace refl
 {
+template <typename T>
+[[nodiscard]] constexpr auto GetStaticTypeInfo();
+
 template <typename T>
 class TypeReflector
 {
@@ -19,16 +24,50 @@ public:
     void SetGUID(const edt::GUID& guid);
 
     template <auto pfn>
+        requires detail::DeclaredByReflectedType<pfn, T>
     void AddMethod(const std::string_view& name);
 
     template <auto pfield>
+        requires detail::DeclaredByReflectedType<pfield, T>
     void AddField(const std::string_view& name);
+
+    template <typename Base>
+    void SetBaseClass()
+    {
+        static_assert(!std::is_same_v<std::remove_cvref_t<T>, Base>);
+        static_assert(std::is_convertible_v<std::remove_cvref_t<T>*, Base*>);
+        m_type->SetBaseClass(GetTypeInfo<Base>());
+        AddBaseConversions<Base>();
+    }
+
+    void AddAmbiguousField(std::string_view name) { m_type->AddAmbiguousField(name); }
+    void AddAmbiguousMethod(std::string_view name) { m_type->AddAmbiguousMethod(name); }
 
     void SetBaseClass(edt::GUID guid) { m_type->SetBaseClass(guid); }
 
     Type* GetType() const;
 
 private:
+    template <typename Base>
+    void AddBaseConversions()
+    {
+        if constexpr (std::is_convertible_v<std::remove_cvref_t<T>*, Base*>)
+        {
+            m_type->SetBaseConversion(
+                GetTypeInfo<Base>(),
+                [](void* instance) -> void*
+                { return static_cast<Base*>(static_cast<std::remove_cvref_t<T>*>(instance)); });
+        }
+        else
+        {
+            m_type->SetBaseConversion(GetTypeInfo<Base>(), nullptr);
+        }
+        if constexpr (requires { Base::ReflectType(); } || requires { TypeReflectionProvider<Base>::ReflectType(); })
+        {
+            GetStaticTypeInfo<Base>().ForEachBase([&]<typename Ancestor> { AddBaseConversions<Ancestor>(); });
+        }
+    }
+
     Type* m_type = nullptr;
 };
 
@@ -77,16 +116,9 @@ inline TypeReflector<T>::TypeReflector(Type& type) : m_type(&type)
 
 template <typename T>
 template <auto pfn>
+    requires detail::DeclaredByReflectedType<pfn, T>
 inline void TypeReflector<T>::AddMethod(const std::string_view& name)
 {
-    using Signature = edt::SignatureFromPtr<pfn>;
-    if constexpr (!Signature::Pure)
-    {
-        static_assert(
-            std::is_base_of_v<typename Signature::Class, std::remove_cvref_t<T>>,
-            "Reflected methods must belong to the reflected type or one of its "
-            "base classes");
-    }
     detail::FunctionReflector<pfn> functionReflector;
     functionReflector.SetName(name);
     m_type->AddMethod(functionReflector.TakeFunction());
@@ -94,16 +126,9 @@ inline void TypeReflector<T>::AddMethod(const std::string_view& name)
 
 template <typename T>
 template <auto pfield>
+    requires detail::DeclaredByReflectedType<pfield, T>
 inline void TypeReflector<T>::AddField(const std::string_view& name)
 {
-    using Traits = detail::FieldPointerTraits<pfield>;
-    if constexpr (!Traits::IsStatic())
-    {
-        static_assert(
-            std::is_base_of_v<typename Traits::Class, std::remove_cvref_t<T>>,
-            "Reflected fields must belong to the reflected type or one of its "
-            "base classes");
-    }
     detail::FieldReflector<pfield> fieldReflector;
     fieldReflector.SetName(name);
     m_type->AddField(fieldReflector.TakeField());
