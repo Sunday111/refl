@@ -33,17 +33,21 @@ decltype(auto) WrapReflectedFunctionReturnType(
         else
         {
             using NoRef = std::remove_reference_t<ReturnType>;
-            alignas(NoRef) std::array<std::byte, sizeof(NoRef)> rvMemory{};
-            fn->CallForwarded(instance, rvMemory.data(), args, categories, argsCount);
-            NoRef* pRV = std::launder(reinterpret_cast<NoRef*>(rvMemory.data()));
+            union ReturnStorage
+            {
+                ReturnStorage() noexcept {}
+                ~ReturnStorage() noexcept {}
+                NoRef value;
+            } storage;
+            fn->CallForwarded(instance, std::addressof(storage.value), args, categories, argsCount);
 
             struct DestroyOnExit
             {
                 NoRef* value;
                 ~DestroyOnExit() { std::destroy_at(value); }
-            } destroy{pRV};
+            } destroy{std::addressof(storage.value)};
 
-            NoRef rv(std::move(*pRV));
+            NoRef rv(std::move(storage.value));
             return rv;
         }
     }
