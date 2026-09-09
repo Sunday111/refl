@@ -1,13 +1,11 @@
-#include <array>
-#include <cstddef>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <string_view>
 
+#include "gtest/gtest.h"
 #include "refl/call_reflected_function.hpp"
 #include "refl/reflector/type_reflector.hpp"
-#include "gtest/gtest.h"
 
 TEST(reflTest, SpecialMembers_DefaultConstructor)
 {
@@ -28,10 +26,14 @@ TEST(reflTest, SpecialMembers_DefaultConstructor)
     EXPECT_TRUE(type != nullptr);
     EXPECT_TRUE(type->GetSpecialMembers().defaultConstructor != nullptr);
 
-    alignas(ReflectedType) std::array<std::byte, sizeof(ReflectedType)> data{};
-    auto* pointer = reinterpret_cast<ReflectedType*>(data.data());
+    union Storage
+    {
+        Storage() noexcept {}
+        ~Storage() noexcept {}
+        ReflectedType value;
+    } storage;
+    auto* pointer = std::addressof(storage.value);
     type->GetSpecialMembers().defaultConstructor(pointer);
-    pointer = std::launder(pointer);
     EXPECT_TRUE(pointer->member == 124);
     type->GetSpecialMembers().destructor(pointer);
 }
@@ -173,10 +175,14 @@ TEST(reflTest, SpecialMembers_Destructor)
     EXPECT_TRUE(type->GetSpecialMembers().defaultConstructor != nullptr);
     EXPECT_TRUE(type->GetSpecialMembers().destructor != nullptr);
 
-    alignas(ReflectedType) std::array<std::byte, sizeof(ReflectedType)> data{};
-    auto* pointer = reinterpret_cast<ReflectedType*>(data.data());
+    union Storage
+    {
+        Storage() noexcept {}
+        ~Storage() noexcept {}
+        ReflectedType value;
+    } storage;
+    auto* pointer = std::addressof(storage.value);
     type->GetSpecialMembers().defaultConstructor(pointer);
-    pointer = std::launder(pointer);
     bool destroyed = false;
     pointer->destroyed = &destroyed;
     type->GetSpecialMembers().destructor(pointer);

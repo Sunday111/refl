@@ -7,6 +7,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "edt/functional/on_scope_leave.hpp"
 #include "get_type_info.hpp"
 
 namespace refl
@@ -33,17 +34,17 @@ decltype(auto) WrapReflectedFunctionReturnType(
         else
         {
             using NoRef = std::remove_reference_t<ReturnType>;
-            alignas(NoRef) std::array<std::byte, sizeof(NoRef)> rvMemory{};
-            fn->CallForwarded(instance, rvMemory.data(), args, categories, argsCount);
-            NoRef* pRV = std::launder(reinterpret_cast<NoRef*>(rvMemory.data()));
-
-            struct DestroyOnExit
+            union ReturnStorage
             {
-                NoRef* value;
-                ~DestroyOnExit() { std::destroy_at(value); }
-            } destroy{pRV};
+                ReturnStorage() noexcept {}
+                ~ReturnStorage() noexcept {}
+                NoRef value;
+            } storage;
+            fn->CallForwarded(instance, std::addressof(storage.value), args, categories, argsCount);
 
-            NoRef rv(std::move(*pRV));
+            auto destroy = edt::OnScopeLeave([&] { std::destroy_at(std::addressof(storage.value)); });
+
+            NoRef rv(std::move(storage.value));
             return rv;
         }
     }
