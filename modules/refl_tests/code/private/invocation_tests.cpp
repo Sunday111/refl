@@ -2,10 +2,11 @@
 #include <memory>
 #include <stdexcept>
 #include <string_view>
+#include <utility>
 
+#include "gtest/gtest.h"
 #include "refl/call_reflected_function.hpp"
 #include "refl/get_type_info.hpp"
-#include "gtest/gtest.h"
 
 namespace
 {
@@ -35,11 +36,13 @@ struct MoveOnly
 
 struct CopyableValue
 {
+    explicit CopyableValue(int initial) : value(initial) {}
+    CopyableValue(const CopyableValue&) = default;
+    CopyableValue(CopyableValue&& other) noexcept : value(std::exchange(other.value, -1)) {}
+    CopyableValue& operator=(const CopyableValue&) = default;
+    CopyableValue& operator=(CopyableValue&&) = default;
     int value = 0;
-    static void ReflectType(refl::TypeReflector<CopyableValue>& reflector)
-    {
-        reflector.SetName("CopyableValue");
-    }
+    static void ReflectType(refl::TypeReflector<CopyableValue>& reflector) { reflector.SetName("CopyableValue"); }
 };
 
 struct ThrowOnSecondCopy
@@ -147,11 +150,15 @@ int ThrowingFunction()
 
 struct InvocationHost
 {
+    void Consume(CopyableValue value) { consumed = value.value; }
+    int consumed = 0;
+
     [[nodiscard]] static constexpr auto ReflectType()
     {
         return refl::StaticClassTypeInfo<InvocationHost>(
                    "InvocationHost",
                    edt::GUID::Create("EBED1B11-1FA7-477B-B49E-26C044E13BC2"))
+            .Method<"Consume", &InvocationHost::Consume>()
             .Method<"MakeOverAligned", &MakeOverAligned>()
             .Method<"MakeNonDefault", &MakeNonDefault>()
             .Method<"MakeMoveOnly", &MakeMoveOnly>()
@@ -226,9 +233,7 @@ TEST(ReflectedInvocationTest, HandlesValueCategoriesAndReturnTypes)
 
     refl::CallFunction<void>(FindMethod(type, "CallVoid"));
     EXPECT_EQ(GetInvocationState().void_calls, 1);
-    EXPECT_THROW(
-        static_cast<void>(refl::CallFunction<int>(FindMethod(type, "ThrowingFunction"))),
-        std::runtime_error);
+    EXPECT_THROW(static_cast<void>(refl::CallFunction<int>(FindMethod(type, "ThrowingFunction"))), std::runtime_error);
 
     ThrowOnSecondCopy::Reset();
     EXPECT_THROW(
@@ -237,4 +242,85 @@ TEST(ReflectedInvocationTest, HandlesValueCategoriesAndReturnTypes)
     EXPECT_EQ(ThrowOnSecondCopy::copies, 2);
     EXPECT_EQ(ThrowOnSecondCopy::destructions, 2);
     EXPECT_EQ(ThrowOnSecondCopy::live, 0);
+}
+
+TEST(ReflectedInvocationTest, PreservesConstSources)
+{
+    const auto* type = refl::GetTypeInfo<InvocationHost>();
+    const auto* consume = FindMethod(type, "ConsumeCopyable");
+    const CopyableValue source{7};
+    refl::CallFunction<void>(consume, source);
+    EXPECT_EQ(GetInvocationState().consumed_copyable, 7);
+    refl::CallFunction<void>(consume, std::move(source));
+    EXPECT_EQ(GetInvocationState().consumed_copyable, 7);
+    EXPECT_EQ(source.value, 7);
+
+    InvocationHost host;
+    refl::CallMethod<void>(FindMethod(type, "Consume"), host, std::move(source));
+    EXPECT_EQ(host.consumed, 7);
+    EXPECT_EQ(source.value, 7);
+
+    CopyableValue movable{9};
+    refl::CallFunction<void>(consume, std::move(movable));
+    EXPECT_EQ(GetInvocationState().consumed_copyable, 9);
+    EXPECT_EQ(movable.value, -1);
+
+    const MoveOnly move_only{11};
+    EXPECT_THROW(
+        refl::CallFunction<void>(FindMethod(type, "ConsumeMoveOnly"), std::move(move_only)),
+        std::invalid_argument);
+    ASSERT_NE(move_only.value, nullptr);
+    EXPECT_EQ(*move_only.value, 11);
+}
+
+TEST(ReflectedInvocationTest, ValidatesReferenceQualifications)
+{
+    constexpr auto increment = +[](int& value)
+    {
+        ++value;
+    };
+    constexpr auto increment_rvalue = +[](int&& value)
+    {
+        ++value;
+    };
+    constexpr auto read = +[](const int& value)
+    {
+        return value;
+    };
+    constexpr auto write_volatile = +[](volatile int& value)
+    {
+        value = 13;
+    };
+    constexpr auto read_volatile = +[](const volatile int& value)
+    {
+        return int(value);
+    };
+    auto mutable_ref = refl::detail::FunctionReflector<increment>().TakeFunction();
+    auto rvalue_ref = refl::detail::FunctionReflector<increment_rvalue>().TakeFunction();
+    auto const_ref = refl::detail::FunctionReflector<read>().TakeFunction();
+    auto volatile_ref = refl::detail::FunctionReflector<write_volatile>().TakeFunction();
+    auto cv_ref = refl::detail::FunctionReflector<read_volatile>().TakeFunction();
+    int value = 7;
+    const int constant = 8;
+    volatile int changing = 9;
+    const volatile int cv = 10;
+
+    EXPECT_THROW(refl::CallFunction<void>(&mutable_ref, constant), std::invalid_argument);
+    EXPECT_THROW(refl::CallFunction<void>(&mutable_ref, std::move(constant)), std::invalid_argument);
+    EXPECT_THROW(refl::CallFunction<void>(&mutable_ref, 7), std::invalid_argument);
+    EXPECT_THROW(refl::CallFunction<void>(&mutable_ref, changing), std::invalid_argument);
+    EXPECT_THROW(refl::CallFunction<void>(&rvalue_ref, value), std::invalid_argument);
+    EXPECT_THROW(refl::CallFunction<void>(&rvalue_ref, std::move(constant)), std::invalid_argument);
+    EXPECT_THROW(refl::CallFunction<int>(&const_ref, changing), std::invalid_argument);
+    EXPECT_THROW(refl::CallFunction<void>(&volatile_ref, cv), std::invalid_argument);
+
+    refl::CallFunction<void>(&mutable_ref, value);
+    EXPECT_EQ(value, 8);
+    refl::CallFunction<void>(&rvalue_ref, std::move(value));
+    EXPECT_EQ(value, 9);
+    EXPECT_EQ(refl::CallFunction<int>(&const_ref, constant), 8);
+    EXPECT_EQ(refl::CallFunction<int>(&const_ref, std::move(constant)), 8);
+    refl::CallFunction<void>(&volatile_ref, changing);
+    EXPECT_EQ(changing, 13);
+    EXPECT_EQ(refl::CallFunction<int>(&cv_ref, cv), 10);
 }

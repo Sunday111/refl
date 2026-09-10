@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <vector>
 
 namespace refl
@@ -17,10 +18,28 @@ template <auto pfn>
 class FunctionReflector;
 }
 
-enum class ArgumentValueCategory
+struct ArgumentValueCategory
 {
-    LValue,
-    RValue,
+    enum class Kind
+    {
+        LValue,
+        RValue,
+    };
+
+    Kind kind = Kind::LValue;
+    bool is_const : 1 = false;
+    bool is_volatile : 1 = false;
+
+    template <typename T>
+    static constexpr ArgumentValueCategory From()
+    {
+        using Value = std::remove_reference_t<T>;
+        return {
+            .kind = std::is_lvalue_reference_v<T> ? Kind::LValue : Kind::RValue,
+            .is_const = std::is_const_v<Value>,
+            .is_volatile = std::is_volatile_v<Value>,
+        };
+    }
 };
 
 class Function final
