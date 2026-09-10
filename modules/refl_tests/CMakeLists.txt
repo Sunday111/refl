@@ -7,6 +7,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/cross_tu_identity_a.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/cross_tu_identity_b.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/fields.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/inherited_members.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/invocation_tests.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/methods.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/special_members.cpp

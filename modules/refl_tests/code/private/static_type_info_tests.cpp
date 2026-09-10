@@ -1,8 +1,8 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "refl/get_static_type_info.hpp"
 #include "gtest/gtest.h"
+#include "refl/get_static_type_info.hpp"
 
 namespace
 {
@@ -14,6 +14,8 @@ struct OwnerBase
 
 struct OwnerDerived : OwnerBase
 {
+    int own_field = 0;
+    void OwnMethod() {}
 };
 struct ForeignOwner
 {
@@ -26,9 +28,19 @@ concept CanAddOwnerField =
     requires { refl::StaticClassTypeInfo<OwnerDerived>("OwnerDerived", {}).template Field<"field", field>(); };
 
 template <auto method>
-concept CanAddOwnerMethod = requires {
-    refl::StaticClassTypeInfo<OwnerDerived>("OwnerDerived", {}).template Method<"method", method>();
-};
+concept CanAddOwnerMethod =
+    requires { refl::StaticClassTypeInfo<OwnerDerived>("OwnerDerived", {}).template Method<"method", method>(); };
+
+template <auto field>
+concept CanAddRuntimeOwnerField =
+    requires(refl::TypeReflector<OwnerDerived>& rt) { rt.template AddField<field>("field"); };
+
+template <auto method>
+concept CanAddRuntimeOwnerMethod =
+    requires(refl::TypeReflector<OwnerDerived>& rt) { rt.template AddMethod<method>("method"); };
+
+template <typename Info>
+concept CanFindDuplicateMethod = requires(const Info& info) { info.template GetMethod<"same">(); };
 
 template <typename Info>
 concept CanFindMissingField = requires(const Info& info) { info.template GetField<"missing">(); };
@@ -101,14 +113,28 @@ TEST(StaticTypeInfoTest, SupportsConceptsLookupAndOptionalEnumParsing)
     static_assert(!CanFindMissingField<decltype(info)>);
     static_assert(!CanFindMissingMethod<decltype(info)>);
 
-    static_assert(CanAddOwnerField<&OwnerBase::field>);
+    static_assert(CanAddOwnerField<&OwnerDerived::own_field>);
+    static_assert(!CanAddOwnerField<&OwnerBase::field>);
+    static_assert(!CanAddOwnerField<&OwnerDerived::field>);
     static_assert(!CanAddOwnerField<&ForeignOwner::field>);
-    static_assert(CanAddOwnerMethod<&OwnerBase::Method>);
+    static_assert(CanAddOwnerMethod<&OwnerDerived::OwnMethod>);
+    static_assert(!CanAddOwnerMethod<&OwnerBase::Method>);
+    static_assert(!CanAddOwnerMethod<&OwnerDerived::Method>);
     static_assert(!CanAddOwnerMethod<&ForeignOwner::Method>);
+    static_assert(CanAddRuntimeOwnerField<&OwnerDerived::own_field>);
+    static_assert(!CanAddRuntimeOwnerField<&OwnerBase::field>);
+    static_assert(!CanAddRuntimeOwnerField<&OwnerDerived::field>);
+    static_assert(!CanAddRuntimeOwnerField<&ForeignOwner::field>);
+    static_assert(CanAddRuntimeOwnerMethod<&OwnerDerived::OwnMethod>);
+    static_assert(!CanAddRuntimeOwnerMethod<&OwnerBase::Method>);
+    static_assert(!CanAddRuntimeOwnerMethod<&OwnerDerived::Method>);
+    static_assert(!CanAddRuntimeOwnerMethod<&ForeignOwner::Method>);
 
     constexpr auto duplicate_methods = refl::StaticClassTypeInfo<StaticInfoHost>("DuplicateMethods", {})
                                            .Method<"same", &DuplicateMethodOne>()
                                            .Method<"same", &DuplicateMethodTwo>();
     static_assert(duplicate_methods.HasMethod("same"));
-    static_assert(duplicate_methods.GetMethod<"same">() == &DuplicateMethodOne);
+    static_assert(duplicate_methods.AllMethods.Size() == 1);
+    static_assert(duplicate_methods.AllMethods.IsAmbiguous("same"));
+    static_assert(!CanFindDuplicateMethod<decltype(duplicate_methods)>);
 }
