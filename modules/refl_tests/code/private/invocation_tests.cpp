@@ -34,6 +34,18 @@ struct MoveOnly
     static void ReflectType(refl::TypeReflector<MoveOnly>& reflector) { reflector.SetName("MoveOnly"); }
 };
 
+struct CopyOnly
+{
+    explicit CopyOnly(int initial) : value(initial) {}
+    CopyOnly(const CopyOnly&) = default;
+    CopyOnly(CopyOnly&&) = delete;
+    CopyOnly& operator=(const CopyOnly&) = default;
+    CopyOnly& operator=(CopyOnly&&) = delete;
+    int value;
+    static void ReflectType(refl::TypeReflector<CopyOnly>& reflector) { reflector.SetName("CopyOnly"); }
+    int Read(CopyOnly argument) { return value + argument.value; }
+};
+
 struct CopyableValue
 {
     explicit CopyableValue(int initial) : value(initial) {}
@@ -323,4 +335,25 @@ TEST(ReflectedInvocationTest, ValidatesReferenceQualifications)
     refl::CallFunction<void>(&volatile_ref, changing);
     EXPECT_EQ(changing, 13);
     EXPECT_EQ(refl::CallFunction<int>(&cv_ref, cv), 10);
+}
+
+TEST(ReflectedInvocationTest, AcceptsCopyOnlyValueArguments)
+{
+    constexpr auto read = +[](CopyOnly value)
+    {
+        return value.value;
+    };
+    auto function = refl::detail::FunctionReflector<read>().TakeFunction();
+    auto method = refl::detail::FunctionReflector<&CopyOnly::Read>().TakeFunction();
+    CopyOnly value{17};
+    const CopyOnly constant{23};
+    EXPECT_EQ(refl::CallFunction<int>(&function, value), 17);
+    EXPECT_EQ(refl::CallFunction<int>(&function, constant), 23);
+    EXPECT_EQ(refl::CallFunction<int>(&function, std::move(constant)), 23);
+    EXPECT_EQ(refl::CallMethod<int>(&method, value, constant), 40);
+    EXPECT_THROW(refl::CallFunction<int>(&function, std::move(value)), std::invalid_argument);
+    volatile CopyOnly changing{29};
+    EXPECT_THROW(refl::CallFunction<int>(&function, changing), std::invalid_argument);
+    EXPECT_EQ(value.value, 17);
+    EXPECT_EQ(constant.value, 23);
 }

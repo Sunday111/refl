@@ -94,18 +94,22 @@ template <typename T>
 inline constexpr decltype(auto) CastArg_t(void* rawArg, ArgumentValueCategory category)
 {
     using Value = std::remove_cvref_t<T>;
-    auto cast = [rawArg]<typename Source>() -> T
+    using Forwarded = std::conditional_t<
+        !std::is_reference_v<T> && !std::is_move_constructible_v<T> && std::is_copy_constructible_v<T>,
+        const Value&,
+        T>;
+    auto cast = [rawArg]<typename Source>() -> Forwarded
     {
         if constexpr (std::is_constructible_v<T, Source>)
         {
-            return static_cast<T>(static_cast<Source>(*static_cast<std::remove_reference_t<Source>*>(rawArg)));
+            return static_cast<Forwarded>(static_cast<Source>(*static_cast<std::remove_reference_t<Source>*>(rawArg)));
         }
         else
         {
             throw std::invalid_argument("Incompatible reflected argument qualifications or value category");
         }
     };
-    auto cast_reference = [&]<typename QualifiedValue>() -> T
+    auto cast_reference = [&]<typename QualifiedValue>() -> Forwarded
     {
         switch (category.kind)
         {
