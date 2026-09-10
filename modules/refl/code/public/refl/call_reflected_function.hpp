@@ -80,7 +80,7 @@ decltype(auto) CallMethod(const Function* fn, Class& instance, Args&&... args)
     constexpr size_t argsCount = sizeof...(Args);
     std::array<void*, argsCount> arguments{
         const_cast<void*>(static_cast<const volatile void*>(std::addressof(args)))...};
-    std::array<ArgumentValueCategory, argsCount> categories{GetArgumentValueCategory<Args&&>()...};
+    std::array<ArgumentValueCategory, argsCount> categories{ArgumentValueCategory::From<Args&&>()...};
     return WrapReflectedFunctionReturnType<ReturnType>(fn, object, arguments.data(), categories.data(), argsCount);
 }
 
@@ -90,7 +90,7 @@ decltype(auto) CallFunction(const Function* fn, Args&&... args)
     constexpr size_t argsCount = sizeof...(Args);
     std::array<void*, argsCount> arguments{
         const_cast<void*>(static_cast<const volatile void*>(std::addressof(args)))...};
-    std::array<ArgumentValueCategory, argsCount> categories{GetArgumentValueCategory<Args&&>()...};
+    std::array<ArgumentValueCategory, argsCount> categories{ArgumentValueCategory::From<Args&&>()...};
     return WrapReflectedFunctionReturnType<ReturnType>(fn, nullptr, arguments.data(), categories.data(), argsCount);
 }
 

@@ -105,26 +105,24 @@ inline constexpr decltype(auto) CastArg_t(void* rawArg, ArgumentValueCategory ca
             throw std::invalid_argument("Incompatible reflected argument qualifications or value category");
         }
     };
-    switch (category)
+    auto cast_reference = [&]<typename QualifiedValue>() -> T
     {
-    case ArgumentValueCategory::LValue:
-        return cast.template operator()<Value&>();
-    case ArgumentValueCategory::RValue:
-        return cast.template operator()<Value&&>();
-    case ArgumentValueCategory::ConstLValue:
-        return cast.template operator()<const Value&>();
-    case ArgumentValueCategory::ConstRValue:
-        return cast.template operator()<const Value&&>();
-    case ArgumentValueCategory::VolatileLValue:
-        return cast.template operator()<volatile Value&>();
-    case ArgumentValueCategory::VolatileRValue:
-        return cast.template operator()<volatile Value&&>();
-    case ArgumentValueCategory::ConstVolatileLValue:
-        return cast.template operator()<const volatile Value&>();
-    case ArgumentValueCategory::ConstVolatileRValue:
-        return cast.template operator()<const volatile Value&&>();
+        switch (category.kind)
+        {
+        case ArgumentValueCategory::Kind::LValue:
+            return cast.template operator()<QualifiedValue&>();
+        case ArgumentValueCategory::Kind::RValue:
+            return cast.template operator()<QualifiedValue&&>();
+        }
+        throw std::invalid_argument("Invalid reflected argument value category");
+    };
+    if (category.is_const)
+    {
+        return category.is_volatile ? cast_reference.template operator()<const volatile Value>()
+                                    : cast_reference.template operator()<const Value>();
     }
-    throw std::invalid_argument("Invalid reflected argument value category");
+    return category.is_volatile ? cast_reference.template operator()<volatile Value>()
+                                : cast_reference.template operator()<Value>();
 }
 
 }  // namespace refl::detail
@@ -177,7 +175,7 @@ inline constexpr decltype(auto) FunctionReflector<pfn>::CastArg_i(
     using Arguments = typename Signature::Args;
     using T = std::tuple_element_t<Index, Arguments>;
     const auto category = Categories == nullptr
-                              ? GetArgumentValueCategory<std::conditional_t<std::is_reference_v<T>, T, T&>>()
+                              ? ArgumentValueCategory::From<std::conditional_t<std::is_reference_v<T>, T, T&>>()
                               : Categories[Index];
     return CastArg_t<T>(ArgsArray[Index], category);
 }

@@ -18,40 +18,29 @@ template <auto pfn>
 class FunctionReflector;
 }
 
-enum class ArgumentValueCategory
+struct ArgumentValueCategory
 {
-    LValue,
-    RValue,
-    ConstLValue,
-    ConstRValue,
-    VolatileLValue,
-    VolatileRValue,
-    ConstVolatileLValue,
-    ConstVolatileRValue,
-};
+    enum class Kind
+    {
+        LValue,
+        RValue,
+    };
 
-template <typename T>
-constexpr ArgumentValueCategory GetArgumentValueCategory()
-{
-    using Value = std::remove_reference_t<T>;
-    constexpr bool lvalue = std::is_lvalue_reference_v<T>;
-    if constexpr (std::is_const_v<Value> && std::is_volatile_v<Value>)
+    Kind kind = Kind::LValue;
+    bool is_const : 1 = false;
+    bool is_volatile : 1 = false;
+
+    template <typename T>
+    static constexpr ArgumentValueCategory From()
     {
-        return lvalue ? ArgumentValueCategory::ConstVolatileLValue : ArgumentValueCategory::ConstVolatileRValue;
+        using Value = std::remove_reference_t<T>;
+        return {
+            .kind = std::is_lvalue_reference_v<T> ? Kind::LValue : Kind::RValue,
+            .is_const = std::is_const_v<Value>,
+            .is_volatile = std::is_volatile_v<Value>,
+        };
     }
-    else if constexpr (std::is_const_v<Value>)
-    {
-        return lvalue ? ArgumentValueCategory::ConstLValue : ArgumentValueCategory::ConstRValue;
-    }
-    else if constexpr (std::is_volatile_v<Value>)
-    {
-        return lvalue ? ArgumentValueCategory::VolatileLValue : ArgumentValueCategory::VolatileRValue;
-    }
-    else
-    {
-        return lvalue ? ArgumentValueCategory::LValue : ArgumentValueCategory::RValue;
-    }
-}
+};
 
 class Function final
 {
