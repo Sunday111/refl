@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cassert>
-#include <functional>
 #include <stdexcept>
 #include <tuple>
 #include <type_traits>
@@ -94,22 +93,18 @@ template <typename T>
 inline constexpr decltype(auto) CastArg_t(void* rawArg, ArgumentValueCategory category)
 {
     using Value = std::remove_cvref_t<T>;
-    using Forwarded = std::conditional_t<
-        !std::is_reference_v<T> && !std::is_move_constructible_v<T> && std::is_copy_constructible_v<T>,
-        const Value&,
-        T>;
-    auto cast = [rawArg]<typename Source>() -> Forwarded
+    auto cast = [rawArg]<typename Source>() -> T
     {
         if constexpr (std::is_constructible_v<T, Source>)
         {
-            return static_cast<Forwarded>(static_cast<Source>(*static_cast<std::remove_reference_t<Source>*>(rawArg)));
+            return static_cast<T>(static_cast<Source>(*static_cast<std::remove_reference_t<Source>*>(rawArg)));
         }
         else
         {
             throw std::invalid_argument("Incompatible reflected argument qualifications or value category");
         }
     };
-    auto cast_reference = [&]<typename QualifiedValue>() -> Forwarded
+    auto cast_reference = [&]<typename QualifiedValue>() -> T
     {
         switch (category.kind)
         {
@@ -219,13 +214,11 @@ inline void FunctionReflector<pfn>::Call_i(
     {
         if constexpr (Signature::Pure)
         {
-            return std::invoke(pfn, CastArg_i<Index>(ArgsArray, Categories)...);
+            return pfn(CastArg_i<Index>(ArgsArray, Categories)...);
         }
         else
         {
-            return std::invoke(
-                pfn,
-                CastObject<typename Signature::Class, Signature>(Object),
+            return (CastObject<typename Signature::Class, Signature>(Object).*pfn)(
                 CastArg_i<Index>(ArgsArray, Categories)...);
         }
     };
