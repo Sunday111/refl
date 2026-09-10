@@ -2,9 +2,9 @@
 #include <string>
 #include <string_view>
 
+#include "gtest/gtest.h"
 #include "refl/call_reflected_function.hpp"
 #include "refl/reflector/type_reflector.hpp"
-#include "gtest/gtest.h"
 
 namespace reflTest_Fields
 {
@@ -80,4 +80,102 @@ TEST(reflTest, Fields)
         EXPECT_TRUE(f->GetType() == refl::GetTypeInfo<int*>());
         EXPECT_TRUE(f->GetValue(nullptr) == &instance.ms_int_ptr);
     }
+}
+
+namespace
+{
+struct QualifiedFields
+{
+    int writable = 11;
+    const int constant = 17;
+    const int* pointer = &constant;
+    int* const constant_pointer = &writable;
+    inline static const int static_constant = 23;
+    inline static int static_writable = 29;
+
+    static void ReflectType(refl::TypeReflector<QualifiedFields>& reflector)
+    {
+        reflector.SetName("QualifiedFields");
+        reflector.AddField<&QualifiedFields::writable>("writable");
+        reflector.AddField<&QualifiedFields::constant>("constant");
+        reflector.AddField<&QualifiedFields::pointer>("pointer");
+        reflector.AddField<&QualifiedFields::constant_pointer>("constant_pointer");
+        reflector.AddField<&QualifiedFields::static_constant>("static_constant");
+        reflector.AddField<&QualifiedFields::static_writable>("static_writable");
+    }
+};
+
+struct DerivedFields : virtual QualifiedFields
+{
+    static void ReflectType(refl::TypeReflector<DerivedFields>& reflector)
+    {
+        reflector.SetName("DerivedFields");
+        reflector.SetBaseClass<QualifiedFields>();
+    }
+};
+}  // namespace
+
+TEST(reflTest, QualifiedFields)
+{
+    const auto* type = refl::GetTypeInfo<QualifiedFields>();
+    QualifiedFields instance;
+    const QualifiedFields constant_instance;
+    const auto* writable = type->GetField("writable");
+    ASSERT_NE(writable, nullptr);
+    EXPECT_FALSE(writable->IsConst());
+    EXPECT_EQ(writable->GetConstValue(&constant_instance), &constant_instance.writable);
+    *static_cast<int*>(writable->GetValue(&instance)) = 31;
+    EXPECT_EQ(instance.writable, 31);
+
+    const auto* constant = type->GetField("constant");
+    ASSERT_NE(constant, nullptr);
+    EXPECT_TRUE(constant->IsConst());
+    EXPECT_EQ(constant->GetType(), refl::GetTypeInfo<int>());
+    EXPECT_EQ(constant->GetConstValue(&constant_instance), &constant_instance.constant);
+    EXPECT_EQ(*static_cast<const int*>(constant->GetConstValue(&instance)), 17);
+    EXPECT_THROW(static_cast<void>(constant->GetValue(&instance)), std::invalid_argument);
+
+    const auto* pointer = type->GetField("pointer");
+    ASSERT_NE(pointer, nullptr);
+    EXPECT_FALSE(pointer->IsConst());
+    *static_cast<const int**>(pointer->GetValue(&instance)) = &constant_instance.constant;
+    EXPECT_EQ(instance.pointer, &constant_instance.constant);
+
+    const auto* constant_pointer = type->GetField("constant_pointer");
+    ASSERT_NE(constant_pointer, nullptr);
+    EXPECT_TRUE(constant_pointer->IsConst());
+    EXPECT_EQ(constant_pointer->GetConstValue(&instance), &instance.constant_pointer);
+    EXPECT_THROW(static_cast<void>(constant_pointer->GetValue(&instance)), std::invalid_argument);
+
+    const auto* static_constant = type->GetField("static_constant");
+    ASSERT_NE(static_constant, nullptr);
+    EXPECT_TRUE(static_constant->IsConst());
+    EXPECT_EQ(static_constant->GetConstValue(nullptr), &QualifiedFields::static_constant);
+    EXPECT_THROW(static_cast<void>(static_constant->GetValue(nullptr)), std::invalid_argument);
+
+    const auto* static_writable = type->GetField("static_writable");
+    ASSERT_NE(static_writable, nullptr);
+    EXPECT_FALSE(static_writable->IsConst());
+    EXPECT_EQ(static_writable->GetValue(nullptr), &QualifiedFields::static_writable);
+}
+
+TEST(reflTest, InheritedQualifiedFields)
+{
+    const auto* type = refl::GetTypeInfo<DerivedFields>();
+    DerivedFields instance;
+    const DerivedFields constant_instance;
+    const auto* constant = type->GetField("constant");
+    ASSERT_NE(constant, nullptr);
+    EXPECT_TRUE(constant->IsConst());
+    EXPECT_EQ(constant->GetConstValue(&constant_instance), &constant_instance.constant);
+    EXPECT_THROW(static_cast<void>(constant->GetValue(&instance)), std::invalid_argument);
+    const auto* writable = type->GetField("writable");
+    ASSERT_NE(writable, nullptr);
+    EXPECT_FALSE(writable->IsConst());
+    EXPECT_EQ(writable->GetConstValue(&constant_instance), &constant_instance.writable);
+    EXPECT_EQ(writable->GetValue(&instance), &instance.writable);
+    const auto* static_constant = type->GetField("static_constant");
+    ASSERT_NE(static_constant, nullptr);
+    EXPECT_TRUE(static_constant->IsConst());
+    EXPECT_EQ(static_constant->GetConstValue(nullptr), &QualifiedFields::static_constant);
 }
