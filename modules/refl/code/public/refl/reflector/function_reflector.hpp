@@ -93,33 +93,38 @@ namespace refl::detail
 template <typename T>
 inline constexpr decltype(auto) CastArg_t(void* rawArg, ArgumentValueCategory category)
 {
-    if constexpr (std::is_reference_v<T>)
+    using Value = std::remove_cvref_t<T>;
+    auto cast = [rawArg]<typename Source>() -> T
     {
-        using NoRef = std::remove_reference_t<T>;
-        if constexpr (std::is_rvalue_reference_v<T>)
+        if constexpr (std::is_constructible_v<T, Source>)
         {
-            return std::move(*reinterpret_cast<NoRef*>(rawArg));
+            return static_cast<T>(static_cast<Source>(*static_cast<std::remove_reference_t<Source>*>(rawArg)));
         }
         else
         {
-            return *reinterpret_cast<NoRef*>(rawArg);
+            throw std::invalid_argument("Incompatible reflected argument qualifications or value category");
         }
-    }
-    else
+    };
+    switch (category)
     {
-        if (category == ArgumentValueCategory::RValue)
-        {
-            return T(std::move(*reinterpret_cast<T*>(rawArg)));
-        }
-        if constexpr (std::is_copy_constructible_v<T>)
-        {
-            return T(*reinterpret_cast<T*>(rawArg));
-        }
-        else
-        {
-            throw std::invalid_argument("A move-only by-value reflected argument requires an rvalue");
-        }
+    case ArgumentValueCategory::LValue:
+        return cast.template operator()<Value&>();
+    case ArgumentValueCategory::RValue:
+        return cast.template operator()<Value&&>();
+    case ArgumentValueCategory::ConstLValue:
+        return cast.template operator()<const Value&>();
+    case ArgumentValueCategory::ConstRValue:
+        return cast.template operator()<const Value&&>();
+    case ArgumentValueCategory::VolatileLValue:
+        return cast.template operator()<volatile Value&>();
+    case ArgumentValueCategory::VolatileRValue:
+        return cast.template operator()<volatile Value&&>();
+    case ArgumentValueCategory::ConstVolatileLValue:
+        return cast.template operator()<const volatile Value&>();
+    case ArgumentValueCategory::ConstVolatileRValue:
+        return cast.template operator()<const volatile Value&&>();
     }
+    throw std::invalid_argument("Invalid reflected argument value category");
 }
 
 }  // namespace refl::detail
@@ -171,7 +176,9 @@ inline constexpr decltype(auto) FunctionReflector<pfn>::CastArg_i(
 {
     using Arguments = typename Signature::Args;
     using T = std::tuple_element_t<Index, Arguments>;
-    const auto category = Categories == nullptr ? ArgumentValueCategory::LValue : Categories[Index];
+    const auto category = Categories == nullptr
+                              ? GetArgumentValueCategory<std::conditional_t<std::is_reference_v<T>, T, T&>>()
+                              : Categories[Index];
     return CastArg_t<T>(ArgsArray[Index], category);
 }
 

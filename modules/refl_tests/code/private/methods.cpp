@@ -223,7 +223,9 @@ TEST(reflTest, Method_ReturnsVoidArgumentRValue)
     arg.values.resize(10);
 
     ReflectedType object;
-    refl::CallMethod<void>(functionInfo, object, arg);
+    EXPECT_THROW(refl::CallMethod<void>(functionInfo, object, arg), std::invalid_argument);
+    EXPECT_EQ(arg.values.size(), 10);
+    refl::CallMethod<void>(functionInfo, object, std::move(arg));
     EXPECT_TRUE(arg.values.empty());
     EXPECT_TRUE(object.value.values.size() == 10);
 }
