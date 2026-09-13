@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cassert>
-#include <functional>
 #include <stdexcept>
 #include <tuple>
 #include <type_traits>
@@ -215,13 +214,11 @@ inline void FunctionReflector<pfn>::Call_i(
     {
         if constexpr (Signature::Pure)
         {
-            return std::invoke(pfn, CastArg_i<Index>(ArgsArray, Categories)...);
+            return pfn(CastArg_i<Index>(ArgsArray, Categories)...);
         }
         else
         {
-            return std::invoke(
-                pfn,
-                CastObject<typename Signature::Class, Signature>(Object),
+            return (CastObject<typename Signature::Class, Signature>(Object).*pfn)(
                 CastArg_i<Index>(ArgsArray, Categories)...);
         }
     };
