@@ -48,6 +48,11 @@ member belongs to a non-first or virtual base. `Function::GetObjectType()` ident
 type. Raw `Field::GetValue`, `Function::Call`, and `Function::CallForwarded` callers must supply the correct
 instance pointer before erasing it to `void*`.
 
+`Field::IsConst()` reports top-level field constness, independently of its canonical `GetType()`.
+`GetConstValue(const void*)` reads instance fields through mutable or const objects and reads static fields
+with a null object pointer. `GetValue(void*)` provides writable access to non-const fields and throws
+`std::invalid_argument` for const fields. These rules also apply to inherited fields.
+
 `CallMethod` adjusts reflected instances through registered bases and throws `std::invalid_argument` when
 the method's object type is unreachable or has several distinct base subobjects. Paths to one shared virtual
 base subobject identify one conversion. The GUID-only `SetBaseClass(guid)` overload records ancestry for

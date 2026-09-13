@@ -27,10 +27,19 @@ public:
     [[nodiscard]] bool IsAmbiguous() const { return m_ambiguous; }
     [[nodiscard]] const Type* GetType() const { return m_type; }
     [[nodiscard]] std::string_view GetName() const { return m_name; }
-    [[nodiscard]] void* GetValue(void* object) const { return m_getter(*this, object); }
+    [[nodiscard]] bool IsConst() const { return m_const; }
+    [[nodiscard]] const void* GetConstValue(const void* object) const { return m_getter(*this, object); }
+    [[nodiscard]] void* GetValue(void* object) const
+    {
+        if (IsConst())
+        {
+            throw std::invalid_argument("Cannot obtain writable access to a const reflected field");
+        }
+        return const_cast<void*>(GetConstValue(object));
+    }
 
 private:
-    using ContextValueGetter = void* (*)(const Field& field, void* instance);
+    using ContextValueGetter = const void* (*)(const Field& field, const void* instance);
 
     template <auto pField>
     friend class detail::FieldReflector;
@@ -44,13 +53,15 @@ private:
           m_declaring_type(source.m_declaring_type),
           m_declared_getter(source.m_declared_getter),
           m_base_cast(base_cast),
-          m_ambiguous(source.m_ambiguous)
+          m_ambiguous(source.m_ambiguous),
+          m_const(source.m_const)
     {
-        m_getter = [](const Field& field, void* object)
+        m_getter = [](const Field& field, const void* object)
         {
             return field.m_declared_getter(
                 field,
-                object == nullptr || field.m_base_cast == nullptr ? object : field.m_base_cast(object));
+                object == nullptr || field.m_base_cast == nullptr ? object
+                                                                  : field.m_base_cast(const_cast<void*>(object)));
         };
     }
     void MarkAmbiguous()
@@ -59,8 +70,10 @@ private:
         m_type = nullptr;
         m_declaring_type = nullptr;
         m_base_cast = nullptr;
-        SetValueGetter([](const Field&, void*) -> void* { throw std::invalid_argument("Ambiguous reflected field"); });
+        SetValueGetter(
+            [](const Field&, const void*) -> const void* { throw std::invalid_argument("Ambiguous reflected field"); });
     }
+    void SetConst(bool is_const) { m_const = is_const; }
     void SetType(const Type* type) { m_type = type; }
     void SetName(std::string_view name) { m_name.assign(name); }
     void SetDeclaringType(const Type* type) { m_declaring_type = type; }
@@ -77,5 +90,6 @@ private:
     ContextValueGetter m_declared_getter = nullptr;
     void* (*m_base_cast)(void*) = nullptr;
     bool m_ambiguous = false;
+    bool m_const = false;
 };
 }  // namespace refl
