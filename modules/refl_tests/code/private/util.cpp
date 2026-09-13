@@ -2,13 +2,13 @@
 #include <string>
 #include <string_view>
 
+#include "gtest/gtest.h"
 #include "refl/call_reflected_function.hpp"
 #include "refl/reflector/type_reflector.hpp"
-#include "gtest/gtest.h"
 
 void PrintType(const refl::Type* typeInfo, std::ostream& output)
 {
-    assert(typeInfo->GetName().size() != 0);
+    ASSERT_FALSE(typeInfo->GetName().empty());
     output << typeInfo->GetName().data() << '\n';
     bool needNewLine = false;
     auto methods = typeInfo->GetMethods();

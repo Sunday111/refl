@@ -9,11 +9,11 @@
 #include <type_traits>
 #include <vector>
 
+#include "cross_tu_identity.hpp"
+#include "edt/template/static_for.hpp"
+#include "gtest/gtest.h"
 #include "refl/get_static_type_info.hpp"
 #include "refl/get_type_info.hpp"
-#include "edt/template/static_for.hpp"
-#include "cross_tu_identity.hpp"
-#include "gtest/gtest.h"
 
 namespace
 {
@@ -30,10 +30,7 @@ struct RecursiveType
 
 struct MetadataArgument
 {
-    static void ReflectType(refl::TypeReflector<MetadataArgument>& reflector)
-    {
-        reflector.SetName("MetadataArgument");
-    }
+    static void ReflectType(refl::TypeReflector<MetadataArgument>& reflector) { reflector.SetName("MetadataArgument"); }
 };
 
 void ObserveMetadataArgument(const MetadataArgument&) {}

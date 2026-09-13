@@ -7,7 +7,7 @@ namespace
 struct Left
 {
     int left = 11;
-    int ReadLeft() const { return left; }
+    [[nodiscard]] int ReadLeft() const { return left; }
 
     static constexpr auto ReflectType()
     {
@@ -23,9 +23,9 @@ struct Right
 {
     int right = 22;
 
-    int Read() const { return right; }
+    [[nodiscard]] int Read() const { return right; }
     void Write(int value) { right = value; }
-    int ReadVolatile() const volatile { return right; }
+    [[nodiscard]] int ReadVolatile() const volatile { return right; }
     int ReadRvalue() && { return right; }
 
     static constexpr auto ReflectType()
@@ -146,7 +146,7 @@ TEST(InheritedMembersTest, RejectsIncompatibleMethodOwner)
 struct ConflictingBase
 {
     float value = 63.0f;
-    float Read() const { return value; }
+    [[nodiscard]] float Read() const { return value; }
 
     static constexpr auto ReflectType()
     {
@@ -266,7 +266,7 @@ struct AmbiguousGrandchild : AmbiguousChild
 struct ConflictsAgain : AmbiguousChild
 {
     int own_value = 77;
-    int OwnRead() const { return own_value; }
+    [[nodiscard]] int OwnRead() const { return own_value; }
 
     static constexpr auto ReflectType()
     {
@@ -352,7 +352,7 @@ TEST(InheritedMembersTest, ConvertsSharedVirtualBaseOnce)
 struct RuntimeBase
 {
     int field = 19;
-    int Read() const { return field; }
+    [[nodiscard]] int Read() const { return field; }
     static void ReflectType(refl::TypeReflector<RuntimeBase>& rt)
     {
         rt.SetName("RuntimeBase");
@@ -386,7 +386,7 @@ struct RecursiveBase
 {
     RecursiveChild* child = nullptr;
     int value = 29;
-    int Read() const { return value; }
+    [[nodiscard]] int Read() const { return value; }
     static void ReflectType(refl::TypeReflector<RecursiveBase>& rt);
 };
 

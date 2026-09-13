@@ -6,8 +6,8 @@
 #include <string>
 #include <string_view>
 
-#include "refl/get_type_info.hpp"
 #include "gtest/gtest.h"
+#include "refl/get_type_info.hpp"
 
 enum class ExampleEnum : std::uint8_t
 {

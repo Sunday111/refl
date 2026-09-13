@@ -26,16 +26,12 @@ TEST(reflTest, SpecialMembers_DefaultConstructor)
     EXPECT_TRUE(type != nullptr);
     EXPECT_TRUE(type->GetSpecialMembers().defaultConstructor != nullptr);
 
-    union Storage
-    {
-        Storage() noexcept {}
-        ~Storage() noexcept {}
-        ReflectedType value;
-    } storage;
-    auto* pointer = std::addressof(storage.value);
+    std::allocator<ReflectedType> allocator;
+    auto* pointer = allocator.allocate(1);
     type->GetSpecialMembers().defaultConstructor(pointer);
     EXPECT_TRUE(pointer->member == 124);
     type->GetSpecialMembers().destructor(pointer);
+    allocator.deallocate(pointer, 1);
 }
 
 TEST(reflTest, SpecialMembers_NoDefaultConstructor)
@@ -175,16 +171,12 @@ TEST(reflTest, SpecialMembers_Destructor)
     EXPECT_TRUE(type->GetSpecialMembers().defaultConstructor != nullptr);
     EXPECT_TRUE(type->GetSpecialMembers().destructor != nullptr);
 
-    union Storage
-    {
-        Storage() noexcept {}
-        ~Storage() noexcept {}
-        ReflectedType value;
-    } storage;
-    auto* pointer = std::addressof(storage.value);
+    std::allocator<ReflectedType> allocator;
+    auto* pointer = allocator.allocate(1);
     type->GetSpecialMembers().defaultConstructor(pointer);
     bool destroyed = false;
     pointer->destroyed = &destroyed;
     type->GetSpecialMembers().destructor(pointer);
+    allocator.deallocate(pointer, 1);
     EXPECT_TRUE(destroyed);
 }

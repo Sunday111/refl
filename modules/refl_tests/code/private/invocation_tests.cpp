@@ -59,8 +59,8 @@ struct QualifiedCopyOnly
     {
         reflector.SetName("QualifiedCopyOnly");
     }
-    static int Read(QualifiedCopyOnly value) { return value.selected; }
-    int ReadMethod(QualifiedCopyOnly value) const { return value.selected; }
+    static int Read(QualifiedCopyOnly value) { return std::exchange(value.selected, -1); }
+    [[nodiscard]] int ReadMethod(QualifiedCopyOnly value) const { return std::exchange(value.selected, -1); }
 };
 
 struct CopyOnlyWithConvertingConstructor
@@ -69,7 +69,7 @@ struct CopyOnlyWithConvertingConstructor
     CopyOnlyWithConvertingConstructor(const CopyOnlyWithConvertingConstructor&) : selected(1) {}
     CopyOnlyWithConvertingConstructor(CopyOnlyWithConvertingConstructor&&) = delete;
     template <typename T>
-    CopyOnlyWithConvertingConstructor(T&&) : selected(2)
+    explicit(false) CopyOnlyWithConvertingConstructor(T&&) : selected(2)
     {
     }
     int selected = 0;
@@ -77,8 +77,11 @@ struct CopyOnlyWithConvertingConstructor
     {
         reflector.SetName("CopyOnlyWithConvertingConstructor");
     }
-    static int Read(CopyOnlyWithConvertingConstructor value) { return value.selected; }
-    int ReadMethod(CopyOnlyWithConvertingConstructor value) const { return value.selected; }
+    static int Read(CopyOnlyWithConvertingConstructor value) { return std::exchange(value.selected, -1); }
+    [[nodiscard]] int ReadMethod(CopyOnlyWithConvertingConstructor value) const
+    {
+        return std::exchange(value.selected, -1);
+    }
 };
 
 struct MutableCopyOnly
@@ -89,8 +92,8 @@ struct MutableCopyOnly
     int selected = 0;
     int copies = 0;
     static void ReflectType(refl::TypeReflector<MutableCopyOnly>& reflector) { reflector.SetName("MutableCopyOnly"); }
-    static int Read(MutableCopyOnly value) { return value.selected; }
-    int ReadMethod(MutableCopyOnly value) const { return value.selected; }
+    static int Read(MutableCopyOnly value) { return std::exchange(value.selected, -1); }
+    [[nodiscard]] int ReadMethod(MutableCopyOnly value) const { return std::exchange(value.selected, -1); }
 };
 
 struct CopyableValue
@@ -310,12 +313,12 @@ TEST(ReflectedInvocationTest, PreservesConstSources)
     const CopyableValue source{7};
     refl::CallFunction<void>(consume, source);
     EXPECT_EQ(GetInvocationState().consumed_copyable, 7);
-    refl::CallFunction<void>(consume, std::move(source));
+    refl::CallFunction<void>(consume, static_cast<const CopyableValue&&>(source));
     EXPECT_EQ(GetInvocationState().consumed_copyable, 7);
     EXPECT_EQ(source.value, 7);
 
     InvocationHost host;
-    refl::CallMethod<void>(FindMethod(type, "Consume"), host, std::move(source));
+    refl::CallMethod<void>(FindMethod(type, "Consume"), host, static_cast<const CopyableValue&&>(source));
     EXPECT_EQ(host.consumed, 7);
     EXPECT_EQ(source.value, 7);
 
@@ -338,7 +341,7 @@ TEST(ReflectedInvocationTest, ValidatesReferenceQualifications)
     {
         ++value;
     };
-    constexpr auto increment_rvalue = +[](int&& value)
+    constexpr void (*increment_rvalue)(int&&) = [](auto&& value)
     {
         ++value;
     };
@@ -352,7 +355,7 @@ TEST(ReflectedInvocationTest, ValidatesReferenceQualifications)
     };
     constexpr auto read_volatile = +[](const volatile int& value)
     {
-        return int(value);
+        return value;
     };
     auto mutable_ref = refl::detail::FunctionReflector<increment>().TakeFunction();
     auto rvalue_ref = refl::detail::FunctionReflector<increment_rvalue>().TakeFunction();
@@ -365,20 +368,24 @@ TEST(ReflectedInvocationTest, ValidatesReferenceQualifications)
     const volatile int cv = 10;
 
     EXPECT_THROW(refl::CallFunction<void>(&mutable_ref, constant), std::invalid_argument);
-    EXPECT_THROW(refl::CallFunction<void>(&mutable_ref, std::move(constant)), std::invalid_argument);
+    EXPECT_THROW(
+        refl::CallFunction<void>(&mutable_ref, static_cast<decltype(constant)&&>(constant)),
+        std::invalid_argument);
     EXPECT_THROW(refl::CallFunction<void>(&mutable_ref, 7), std::invalid_argument);
     EXPECT_THROW(refl::CallFunction<void>(&mutable_ref, changing), std::invalid_argument);
     EXPECT_THROW(refl::CallFunction<void>(&rvalue_ref, value), std::invalid_argument);
-    EXPECT_THROW(refl::CallFunction<void>(&rvalue_ref, std::move(constant)), std::invalid_argument);
+    EXPECT_THROW(
+        refl::CallFunction<void>(&rvalue_ref, static_cast<decltype(constant)&&>(constant)),
+        std::invalid_argument);
     EXPECT_THROW(refl::CallFunction<int>(&const_ref, changing), std::invalid_argument);
     EXPECT_THROW(refl::CallFunction<void>(&volatile_ref, cv), std::invalid_argument);
 
     refl::CallFunction<void>(&mutable_ref, value);
     EXPECT_EQ(value, 8);
-    refl::CallFunction<void>(&rvalue_ref, std::move(value));
+    refl::CallFunction<void>(&rvalue_ref, static_cast<decltype(value)&&>(value));
     EXPECT_EQ(value, 9);
     EXPECT_EQ(refl::CallFunction<int>(&const_ref, constant), 8);
-    EXPECT_EQ(refl::CallFunction<int>(&const_ref, std::move(constant)), 8);
+    EXPECT_EQ(refl::CallFunction<int>(&const_ref, static_cast<decltype(constant)&&>(constant)), 8);
     refl::CallFunction<void>(&volatile_ref, changing);
     EXPECT_EQ(changing, 13);
     EXPECT_EQ(refl::CallFunction<int>(&cv_ref, cv), 10);
@@ -396,9 +403,9 @@ TEST(ReflectedInvocationTest, AcceptsCopyOnlyValueArguments)
     const CopyOnly constant{23};
     EXPECT_EQ(refl::CallFunction<int>(&function, value), 17);
     EXPECT_EQ(refl::CallFunction<int>(&function, constant), 23);
-    EXPECT_EQ(refl::CallFunction<int>(&function, std::move(constant)), 23);
+    EXPECT_EQ(refl::CallFunction<int>(&function, static_cast<decltype(constant)&&>(constant)), 23);
     EXPECT_EQ(refl::CallMethod<int>(&method, value, constant), 40);
-    EXPECT_THROW(refl::CallFunction<int>(&function, std::move(value)), std::invalid_argument);
+    EXPECT_THROW(refl::CallFunction<int>(&function, static_cast<decltype(value)&&>(value)), std::invalid_argument);
     volatile CopyOnly changing{29};
     EXPECT_THROW(refl::CallFunction<int>(&function, changing), std::invalid_argument);
     EXPECT_EQ(value.value, 17);
@@ -423,9 +430,9 @@ TEST(ReflectedInvocationTest, PreservesCopyConstructorQualifications)
     check(constant);
     check(changing);
     check(constant_changing);
-    check(std::move(constant));
-    EXPECT_THROW(refl::CallFunction<int>(&function, std::move(value)), std::invalid_argument);
-    EXPECT_THROW(refl::CallMethod<int>(&method, value, std::move(value)), std::invalid_argument);
+    check(static_cast<decltype(constant)&&>(constant));
+    EXPECT_THROW(refl::CallFunction<int>(&function, static_cast<decltype(value)&&>(value)), std::invalid_argument);
+    EXPECT_THROW(refl::CallMethod<int>(&method, value, static_cast<decltype(value)&&>(value)), std::invalid_argument);
 }
 
 TEST(ReflectedInvocationTest, AcceptsMutableOnlyCopyConstructors)
@@ -441,7 +448,7 @@ TEST(ReflectedInvocationTest, AcceptsMutableOnlyCopyConstructors)
     volatile MutableCopyOnly changing;
     EXPECT_THROW(refl::CallFunction<int>(&function, constant), std::invalid_argument);
     EXPECT_THROW(refl::CallFunction<int>(&function, changing), std::invalid_argument);
-    EXPECT_THROW(refl::CallFunction<int>(&function, std::move(value)), std::invalid_argument);
+    EXPECT_THROW(refl::CallFunction<int>(&function, static_cast<decltype(value)&&>(value)), std::invalid_argument);
     EXPECT_THROW(refl::CallMethod<int>(&method, value, constant), std::invalid_argument);
     EXPECT_EQ(value.copies, 2);
 }
@@ -455,8 +462,12 @@ TEST(ReflectedInvocationTest, PreservesCopySelectionWithConvertingConstructors)
     Value value;
     EXPECT_EQ(refl::CallFunction<int>(&function, constant), Value::Read(constant));
     EXPECT_EQ(refl::CallMethod<int>(&method, constant, constant), constant.ReadMethod(constant));
-    EXPECT_EQ(refl::CallFunction<int>(&function, std::move(constant)), Value::Read(std::move(constant)));
+    EXPECT_EQ(
+        refl::CallFunction<int>(&function, static_cast<decltype(constant)&&>(constant)),
+        Value::Read(static_cast<decltype(constant)&&>(constant)));
     EXPECT_EQ(refl::CallFunction<int>(&function, value), Value::Read(value));
-    EXPECT_THROW(refl::CallFunction<int>(&function, std::move(value)), std::invalid_argument);
-    EXPECT_THROW(refl::CallMethod<int>(&method, constant, std::move(value)), std::invalid_argument);
+    EXPECT_THROW(refl::CallFunction<int>(&function, static_cast<decltype(value)&&>(value)), std::invalid_argument);
+    EXPECT_THROW(
+        refl::CallMethod<int>(&method, constant, static_cast<decltype(value)&&>(value)),
+        std::invalid_argument);
 }

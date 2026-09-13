@@ -2,9 +2,9 @@
 #include <string>
 #include <string_view>
 
+#include "gtest/gtest.h"
 #include "refl/call_reflected_function.hpp"
 #include "refl/reflector/type_reflector.hpp"
-#include "gtest/gtest.h"
 
 namespace FunctionReturnsVoidArgumentVoid_nm
 {
